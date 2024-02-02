@@ -19,10 +19,9 @@
             </div>
         </div>
         <div class="matrix word-search-game__matrix">
-            <div
+            <template
                 v-for="(row, row_key) in matrix"
                 :key="row_key-1"
-                class="matrix-row"
             >
                 <div
                     v-for="(letter, col_key) in row"
@@ -42,6 +41,7 @@
                         @touchmove="wordSelectUpdate"
                     >
                         <svg
+                            style="border:1px solid black"
                             width="100%"
                             height="100%"
                             viewBox="0 0 18 18"
@@ -61,7 +61,7 @@
                         :class="wordLineClasses(wordLineData)"
                     />
                 </div>
-            </div>
+            </template>
         </div>
     </div>
 </template>
@@ -192,16 +192,26 @@ export default {
                 y_start = this.selectedCells[this.selectedCells.length - 1].y
             }
             if (word) {
-                this.selectedCells.forEach(coordinate => {
-                    this.foundCells.push({x: coordinate.x, y:coordinate.y})
+                let exists = false;
+                this.foundWords.forEach(w => {
+                    if (w.value === word.value) {
+                        exists = true
+                    }
                 })
-                this.foundWords.push({
-                    value: word.value,
-                    x_start: x_start,
-                    y_start: y_start,
-                    direction: this.wordDirection(x_start, y_start, x_end, y_end),
-                    length: word.value.length
-                })
+
+                if (!exists) {
+                    this.selectedCells.forEach(coordinate => {
+                        this.foundCells.push({x: coordinate.x, y:coordinate.y})
+                    })
+
+                    this.foundWords.push({
+                        value: word.value,
+                        x_start: x_start,
+                        y_start: y_start,
+                        direction: this.wordDirection(x_start, y_start, x_end, y_end),
+                        length: word.value.length
+                    })
+                }
             }
             this.selectedFrom = null
             this.selectedTo = null
@@ -211,7 +221,6 @@ export default {
 
             let x, y
 
-            // console.log(event)
             if (event) {
                 let touch = event
                 if (event.type.indexOf('touch') === 0) {
@@ -290,18 +299,18 @@ export default {
 <style lang="scss" scoped>
 $local-green: #32cd99;
 .word-search-game {
-    .matrix-row {
-        width: 100%;
-        margin: 0;
-        display:flex;
-        flex-wrap:wrap;
-        justify-content:space-around;
-        position: relative;
+    max-width: 640px;
+
+    &__matrix {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        grid-template-rows: repeat(10, 1fr);
+    }
+
         .matrix-cell {
-            width: 10%;
-            height: 10%;
-            margin: 0;
-            position: relative;
+            //border: 1px solid #000;
+            text-align: center;
+            aspect-ratio: 1/1;
             &.selected {
                 background-color: #ccc;
             }
@@ -318,7 +327,6 @@ $local-green: #32cd99;
                 user-select: none;
                 position: relative;
                 z-index: 2011;
-                padding: 100% 0 0;
                 svg {
                     position: absolute;
                     left: 0;
@@ -330,38 +338,31 @@ $local-green: #32cd99;
                 }
             }
         }
-    }
+
     .legend {
         background-color: $local-green;
         margin: 3px;
         padding: 3px;
     }
     .word-strike {
-        height: 90%;
+        height: 100%;
         width: 100%;
-        position: absolute;
+        position: relative;
         z-index: 100;
         transform-origin: 0 0;
         opacity: .5;
         border-radius: 25%/150%;
-
-        &.word-strike-direction-0 { margin: 0; }
-        &.word-strike-direction-1 { margin: -30% -35%; }
-        &.word-strike-direction-2 { margin: -90% 0; }
-        &.word-strike-direction-3 { margin: -130% 30%; }
-        &.word-strike-direction-4 { margin: -100% 93%; }
-        &.word-strike-direction-5 { margin: -60% 120%; }
-        &.word-strike-direction-6 { margin: 0 100%; }
-        &.word-strike-direction-7 { margin: 30% 65%; }
+        margin: -100% 0 0 0;
+        padding: 0;
 
         @for $i from 0 to 8 {
             &.word-strike-direction-#{$i} {
-                transform: rotate((($i * 45deg) - 90deg));
+                transform: rotate(($i * 45deg) - 90deg);
             }
         }
         @for $i from 0 to 20 {
-            &:not(.word-strike-diagonal).word-strike-length-#{$i} { width: $i * 100%; }
-            &.word-strike-diagonal.word-strike-length-#{$i} { width: $i * 100% * 1.414214; } // 1.414214 is a hypotenuse multiplier
+            &:not(.word-strike-diagonal).word-strike-length-#{$i} { width: calc($i * 100%); transform-origin: 1 / $i / 2 * 100% 50%; }
+            &.word-strike-diagonal.word-strike-length-#{$i} { width: $i * 100% * 1.32; transform-origin: 1 / $i / 2 / 1.38 * 100% 50%; } // 1.414214 is a hypotenuse multiplier
         }
     }
 
@@ -369,18 +370,6 @@ $local-green: #32cd99;
         &-list {
             margin-bottom: 35px;
         }
-        &-value {
-            font-size: 13px;
-            @media all and (min-width: 360px) {
-                font-size: 14px;
-            }
-            @media all and (min-width: 360px) {
-                font-size: 16px
-            }
-        }
-    }
-    &__matrix {
-        margin-bottom: 20px;
     }
 
     &__text {
