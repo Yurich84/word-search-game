@@ -1,23 +1,9 @@
 <template>
     <div class="word-search-game">
-        <div class="word-search-game__words-list">
-            <div
-                v-for="word in words"
-                :key="word.value"
-            >
-                <template v-if="foundWords.find(w => w.value === word.value)">
-                    <i class="fa-solid fa-circle-check" />
-                    <s class="word-search-game__words-value">
-                        {{ word.value }}
-                    </s>
-                </template>
-                <template v-else>
-                    <span class="word-search-game__words-value">
-                        {{ word.value }}
-                    </span>
-                </template>
-            </div>
-        </div>
+        <word-list
+            :words="words"
+            :found-words="foundWords"
+        />
         <div class="matrix word-search-game__matrix">
             <template
                 v-for="(row, row_key) in matrix"
@@ -67,8 +53,9 @@
 </template>
 
 <script>
+import WordList from '@/components/WordList.vue'
 export default {
-    name: 'WordSearchGame',
+    components: {WordList},
     props: {
         matrix: {
             type: Array,
@@ -274,7 +261,6 @@ export default {
                 'word-strike',
                 'word-strike-direction-' + wordLine.direction,
                 'word-strike-length-' + wordLine.length,
-                'legend'
             ]
             // Odd directions are diagonal
             if (wordLine.direction % 2 === 1) {
@@ -299,51 +285,47 @@ export default {
 <style lang="scss" scoped>
 $local-green: #32cd99;
 .word-search-game {
+    margin-top: 20px;
     max-width: 640px;
 
     &__matrix {
+        width: 100%;
         display: grid;
         grid-template-columns: repeat(10, 1fr);
         grid-template-rows: repeat(10, 1fr);
     }
 
-        .matrix-cell {
-            //border: 1px solid #000;
-            text-align: center;
-            aspect-ratio: 1/1;
-            &.selected {
-                background-color: #ccc;
-            }
-            &.done {
-                transition: transform 3s;
-                transform: rotate(360deg) scale(.01, .01);
-            }
-            .cell {
-                display: flex;
-                align-items: center;
-                justify-content: center;
+    .matrix-cell {
+        text-align: center;
+        aspect-ratio: 1/1;
+        &.selected {
+            background-color: #ccc;
+        }
+        &.done {
+            transition: transform 3s;
+            transform: rotate(360deg) scale(.01, .01);
+        }
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+            position: relative;
+            z-index: 2011;
+            svg {
+                position: absolute;
+                left: 0;
+                top: 0;
+                line-height: 0;
                 width: 100%;
-                height: 100%;
-                user-select: none;
-                position: relative;
-                z-index: 2011;
-                svg {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    line-height: 0;
-                    width: 100%;
-                    font-size: 0.7rem;
-                    fill: var(--color-text);
-                }
+                font-size: 0.7rem;
+                fill: var(--color-text);
             }
         }
-
-    .legend {
-        background-color: $local-green;
-        margin: 3px;
-        padding: 3px;
     }
+
     .word-strike {
         height: 100%;
         width: 100%;
@@ -354,6 +336,7 @@ $local-green: #32cd99;
         border-radius: 25%/150%;
         margin: -100% 0 0 0;
         padding: 0;
+        background-color: $local-green;
 
         @for $i from 0 to 8 {
             &.word-strike-direction-#{$i} {
@@ -361,24 +344,8 @@ $local-green: #32cd99;
             }
         }
         @for $i from 0 to 20 {
-            &:not(.word-strike-diagonal).word-strike-length-#{$i} { width: calc($i * 100%); transform-origin: 1 / $i / 2 * 100% 50%; }
-            &.word-strike-diagonal.word-strike-length-#{$i} { width: $i * 100% * 1.32; transform-origin: 1 / $i / 2 / 1.38 * 100% 50%; } // 1.414214 is a hypotenuse multiplier
-        }
-    }
-
-    &__words {
-        &-list {
-            margin-bottom: 35px;
-        }
-    }
-
-    &__text {
-        margin-bottom: 15px;
-    }
-    &__button {
-        &-wrap {
-            padding: 20px 0;
-            text-align: center;
+            &:not(.word-strike-diagonal).word-strike-length-#{$i} { width: calc($i * 100%); transform-origin: calc(1 / $i / 2 * 100%) 50%; }
+            &.word-strike-diagonal.word-strike-length-#{$i} { width: $i * 100% * 1.32; transform-origin: calc(1 / $i / 2 / 1.38 * 100%) 50%; } // 1.414214 is a hypotenuse multiplier
         }
     }
 }
