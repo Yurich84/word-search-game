@@ -55,6 +55,7 @@
 <script setup>
 import {computed, onMounted, ref, watch} from 'vue'
 import WordList from './WordList.vue'
+import {debounce} from '@/utils'
 
 const props = defineProps({
     matrix: {
@@ -125,7 +126,6 @@ onMounted(() => {
 watch(debounceActiveCell, () => {
     debounceSetActiveCell()
 })
-
 
 function letterTileClasses(x, y) {
     const foundCell = selectedCells.value.find(cell => cell.x === x && cell.y === y)
@@ -269,20 +269,6 @@ function wordLineClasses(wordLine) {
         classes.push('word-strike-diagonal')
     }
     return classes
-}
-
-const debounce = (fn, delay) => {
-    let timeout
-
-    return (...args) => {
-        if (timeout) {
-            clearTimeout(timeout)
-        }
-
-        timeout = setTimeout(() => {
-            fn(...args)
-        }, delay)
-    }
 }
 </script>
 
