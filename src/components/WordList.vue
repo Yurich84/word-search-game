@@ -28,7 +28,6 @@ const props = defineProps({
 })
 
 const isFound = word => props.foundWords.find(w => w.value === word)
-
 </script>
 <style lang="scss" scoped>
 .words-list {
