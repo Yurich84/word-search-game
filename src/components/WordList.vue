@@ -5,12 +5,12 @@
             :key="word.value"
             class="words-list__item"
         >
-                <span
-                    class="words-list__value"
-                    :class="{found: isFound(word.value)}"
-                >
-                    {{ word.value }}
-                </span>
+            <span
+                class="words-list__value"
+                :class="{found: isFound(word.value)}"
+            >
+                {{ word.value }}
+            </span>
         </div>
     </div>
 </template>
