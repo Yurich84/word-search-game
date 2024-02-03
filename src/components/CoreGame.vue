@@ -52,232 +52,236 @@
     </div>
 </template>
 
-<script>
-import WordList from '@/components/WordList.vue'
-export default {
-    components: {WordList},
-    props: {
-        matrix: {
-            type: Array,
-            required: true,
-        },
-        words: {
-            type: Array,
-            required: true,
-        },
+<script setup>
+import {computed, onMounted, ref, watch} from 'vue'
+import WordList from './WordList.vue'
+
+const props = defineProps({
+    matrix: {
+        type: Array,
+        required: true,
     },
-    data() {
-        return {
-            debounceActiveCell: '',
-            selectedFrom: null,
-            selectedTo: null,
-            dragging: false,
-            foundWords: [],
-            foundCells: [],
-            showRobot: false,
+    words: {
+        type: Array,
+        required: true,
+    },
+})
+
+const debounceActiveCell = ref('')
+const selectedFrom = ref(null)
+const selectedTo = ref(null)
+const dragging = ref(false)
+const foundWords = ref([])
+const foundCells = ref([])
+
+const done = computed(() => foundWords.value.length === props.words.length)
+
+const selectedCells = computed(() => {
+    let cells = []
+    if (selectedFrom.value && selectedTo.value) {
+        if (selectedFrom.value.x === selectedTo.value.x) {
+            // horizontal direction (-)
+            let from = Math.min(selectedFrom.value.y, selectedTo.value.y)
+            let to = Math.max(selectedFrom.value.y, selectedTo.value.y)
+            for (let i = from; i <= to; i++) {
+                cells.push({x: selectedFrom.value.x, y: i})
+            }
+        } else if (selectedFrom.value.y === selectedTo.value.y) {
+            // vertical direction (|)
+            let from = Math.min(selectedFrom.value.x, selectedTo.value.x)
+            let to = Math.max(selectedFrom.value.x, selectedTo.value.x)
+            for (let i = from; i <= to; i++) {
+                cells.push({x: i, y: selectedFrom.value.y})
+            }
+        } else if (selectedFrom.value.x - selectedTo.value.x === selectedFrom.value.y - selectedTo.value.y) {
+            // right-down direction (\)
+            let x_from = Math.min(selectedFrom.value.x, selectedTo.value.x)
+            let x_to = Math.max(selectedFrom.value.x, selectedTo.value.x)
+            let y_from = Math.min(selectedFrom.value.y, selectedTo.value.y)
+            for (let i = x_from; i <= x_to; i++) {
+                cells.push({x: i, y: y_from})
+                y_from++
+            }
+        } else if (selectedFrom.value.x - selectedTo.value.x === selectedTo.value.y - selectedFrom.value.y) {
+            // right-up direction (/)
+            let x_from = Math.min(selectedFrom.value.x, selectedTo.value.x)
+            let x_to = Math.max(selectedFrom.value.x, selectedTo.value.x)
+            let y_to = Math.max(selectedFrom.value.y, selectedTo.value.y)
+            for (let i = x_from; i <= x_to; i++) {
+                cells.push({x: i, y: y_to})
+                y_to--
+            }
         }
-    },
-    computed: {
-        done() {
-            return this.foundWords.length === this.words.length
-        },
-        selectedCells() {
-            let cells = []
-            if (this.selectedFrom && this.selectedTo) {
-                if (this.selectedFrom.x === this.selectedTo.x) {
-                    // horizontal direction (-)
-                    let from = Math.min(this.selectedFrom.y, this.selectedTo.y)
-                    let to = Math.max(this.selectedFrom.y, this.selectedTo.y)
-                    for (let i = from; i <= to; i++) {
-                        cells.push({x: this.selectedFrom.x, y: i})
-                    }
-                } else if (this.selectedFrom.y === this.selectedTo.y) {
-                    // vertical direction (|)
-                    let from = Math.min(this.selectedFrom.x, this.selectedTo.x)
-                    let to = Math.max(this.selectedFrom.x, this.selectedTo.x)
-                    for (let i = from; i <= to; i++) {
-                        cells.push({x: i, y: this.selectedFrom.y})
-                    }
-                } else if (this.selectedFrom.x - this.selectedTo.x === this.selectedFrom.y - this.selectedTo.y) {
-                    // right-down direction (\)
-                    let x_from = Math.min(this.selectedFrom.x, this.selectedTo.x)
-                    let x_to = Math.max(this.selectedFrom.x, this.selectedTo.x)
-                    let y_from = Math.min(this.selectedFrom.y, this.selectedTo.y)
-                    for (let i = x_from; i <= x_to; i++) {
-                        cells.push({x: i, y: y_from})
-                        y_from++
-                    }
-                } else if (this.selectedFrom.x - this.selectedTo.x === this.selectedTo.y - this.selectedFrom.y) {
-                    // right-up direction (/)
-                    let x_from = Math.min(this.selectedFrom.x, this.selectedTo.x)
-                    let x_to = Math.max(this.selectedFrom.x, this.selectedTo.x)
-                    let y_to = Math.max(this.selectedFrom.y, this.selectedTo.y)
-                    for (let i = x_from; i <= x_to; i++) {
-                        cells.push({x: i, y: y_to})
-                        y_to--
-                    }
-                }
-            }
-            return cells
+    }
+    return cells
+})
+
+let debounceSetActiveCell
+
+onMounted(() => {
+    debounceSetActiveCell = debounce(wordSelectUpdate, 100)
+})
+
+watch(debounceActiveCell, () => {
+    debounceSetActiveCell()
+})
+
+
+function letterTileClasses(x, y) {
+    const foundCell = selectedCells.value.find(cell => cell.x === x && cell.y === y)
+    if (foundCell) {
+        return 'selected'
+    }
+    if (done.value && ! foundCell) {
+        return 'done'
+    }
+}
+
+function wordSelectStart(event) {
+    dragging.value = true
+    const touchedElement = event.target.closest('div.cell')
+    if (touchedElement && touchedElement.dataset && touchedElement.dataset.x) {
+        const {x, y} = touchedElement.dataset
+        selectedFrom.value = {
+            x: parseInt(x, 10),
+            y: parseInt(y, 10),
         }
-    },
-    watch: {
-        debounceActiveCell: function () {
-            this.debounceSetActiveCell()
-        },
-    },
-    mounted() {
-        this.debounceSetActiveCell = this.debounce(this.wordSelectUpdate, 100)
-    },
-    methods: {
-        letterTileClasses(x, y) {
-            const foundCell = this.selectedCells.find(cell => cell.x === x && cell.y === y)
-            if (foundCell) {
-                return 'selected'
+        return true
+    }
+    return false
+}
+
+function wordSelectStop(event) {
+    dragging.value = false
+    let selected = []
+    selectedCells.value.forEach(coordinate => {
+        selected.push(props.matrix[coordinate.y][coordinate.x])
+    })
+
+    if (selectedCells.value.length < 2) {
+        selectedFrom.value = null
+        selectedTo.value = null
+        return
+    }
+
+    let word = props.words.find(item => item.value === selected.join(''));
+    let x_start = selectedCells.value[0]?.x
+    let y_start = selectedCells.value[0]?.y
+    let x_end = selectedCells.value[selectedCells.value.length - 1].x
+    let y_end = selectedCells.value[selectedCells.value.length - 1].y
+    if (!word) {
+        const selected_word = selected.reverse().join('')
+        word = props.words.find(item => item.value === selected_word)
+        x_end = selectedCells.value[0]?.x
+        y_end = selectedCells.value[0]?.y
+        x_start = selectedCells.value[selectedCells.value.length - 1].x
+        y_start = selectedCells.value[selectedCells.value.length - 1].y
+    }
+    if (word) {
+        let exists = false;
+        foundWords.value.forEach(w => {
+            if (w.value === word.value) {
+                exists = true
             }
-            if (this.done && ! foundCell) {
-                return 'done'
-            }
-        },
-        wordSelectStart(event) {
-            this.dragging = true
-            const touchedElement = event.target.closest('div.cell')
-            if (touchedElement && touchedElement.dataset && touchedElement.dataset.x) {
-                const {x, y} = touchedElement.dataset
-                this.selectedFrom = {
-                    x: parseInt(x, 10),
-                    y: parseInt(y, 10),
-                }
-                return true
-            }
-            return false
-        },
-        wordSelectStop(event) {
-            this.dragging = false
-            let selected = []
-            this.selectedCells.forEach(coordinate => {
-                selected.push(this.matrix[coordinate.y][coordinate.x])
+        })
+
+        if (!exists) {
+            selectedCells.value.forEach(coordinate => {
+                foundCells.value.push({x: coordinate.x, y:coordinate.y})
             })
 
-            if (this.selectedCells.length < 2) {
-                this.selectedFrom = null
-                this.selectedTo = null
-                return
-            }
-
-            let word = this.words.find(item => item.value === selected.join(''));
-            let x_start = this.selectedCells[0]?.x
-            let y_start = this.selectedCells[0]?.y
-            let x_end = this.selectedCells[this.selectedCells.length - 1].x
-            let y_end = this.selectedCells[this.selectedCells.length - 1].y
-            if (!word) {
-                const selected_word = selected.reverse().join('')
-                word = this.words.find(item => item.value === selected_word)
-                x_end = this.selectedCells[0]?.x
-                y_end = this.selectedCells[0]?.y
-                x_start = this.selectedCells[this.selectedCells.length - 1].x
-                y_start = this.selectedCells[this.selectedCells.length - 1].y
-            }
-            if (word) {
-                let exists = false;
-                this.foundWords.forEach(w => {
-                    if (w.value === word.value) {
-                        exists = true
-                    }
-                })
-
-                if (!exists) {
-                    this.selectedCells.forEach(coordinate => {
-                        this.foundCells.push({x: coordinate.x, y:coordinate.y})
-                    })
-
-                    this.foundWords.push({
-                        value: word.value,
-                        x_start: x_start,
-                        y_start: y_start,
-                        direction: this.wordDirection(x_start, y_start, x_end, y_end),
-                        length: word.value.length
-                    })
-                }
-            }
-            this.selectedFrom = null
-            this.selectedTo = null
-        },
-        wordSelectUpdate(event = null) {
-            if (! this.dragging) return
-
-            let x, y
-
-            if (event) {
-                let touch = event
-                if (event.type.indexOf('touch') === 0) {
-                    touch = event.changedTouches.item(0)
-                }
-
-                const touchedElement = document.elementFromPoint(touch.clientX, touch.clientY).closest('div.cell')
-
-                if (touchedElement && touchedElement.dataset && touchedElement.dataset.x) {
-                    x = parseInt(touchedElement.dataset.x, 10)
-                    y = parseInt(touchedElement.dataset.y, 10)
-                }
-            } else {
-                [x, y] = this.debounceActiveCell.split('_')
-            }
-            this.selectedTo = {x: parseInt(x), y: parseInt(y)}
-        },
-
-        wordDirection(x_start, y_start, x_end, y_end) {
-            if (x_start === x_end && y_start > y_end) {
-                // up
-                return 0
-            } else if (x_start < x_end && y_start > y_end) {
-                // up-right
-                return 1
-            } else if (x_start < x_end && y_start === y_end) {
-                // right
-                return 2
-            } else if (x_start < x_end && y_start < y_end) {
-                // down-right
-                return 3
-            } else if (x_start === x_end && y_start < y_end) {
-                // down
-                return 4
-            } else if (x_start > x_end && y_start < y_end) {
-                // down-left
-                return 5
-            } else if (x_start > x_end && y_start === y_end) {
-                // left
-                return 6
-            } else if (x_start > x_end && y_start > y_end) {
-                // up-left
-                return 7
-            }
-        },
-        wordLinesForTile(x, y) {
-            return this.foundWords.filter(w => (w.x_start === x) && (w.y_start === y))
-        },
-        wordLineClasses(wordLine) {
-            const classes = [
-                'word-strike',
-                'word-strike-direction-' + wordLine.direction,
-                'word-strike-length-' + wordLine.length,
-            ]
-            // Odd directions are diagonal
-            if (wordLine.direction % 2 === 1) {
-                classes.push('word-strike-diagonal')
-            }
-            return classes
-        },
-        debounce(f, t) {
-            return function (args) {
-                let previousCall = this.lastCall;
-                this.lastCall = Date.now();
-                if (previousCall && ((this.lastCall - previousCall) <= t)) {
-                    clearTimeout(this.lastCallTimer);
-                }
-            this.lastCallTimer = setTimeout(() => f(args), t);
-            }
+            foundWords.value.push({
+                value: word.value,
+                x_start: x_start,
+                y_start: y_start,
+                direction: wordDirection(x_start, y_start, x_end, y_end),
+                length: word.value.length
+            })
         }
+    }
+    selectedFrom.value = null
+    selectedTo.value = null
+}
+
+function wordSelectUpdate(event = null) {
+    if (! dragging.value) return
+
+    let x, y
+
+    if (event) {
+        let touch = event
+        if (event.type.indexOf('touch') === 0) {
+            touch = event.changedTouches.item(0)
+        }
+
+        const touchedElement = document.elementFromPoint(touch.clientX, touch.clientY).closest('div.cell')
+
+        if (touchedElement && touchedElement.dataset && touchedElement.dataset.x) {
+            x = parseInt(touchedElement.dataset.x, 10)
+            y = parseInt(touchedElement.dataset.y, 10)
+        }
+    } else {
+        [x, y] = debounceActiveCell.value.split('_')
+    }
+    selectedTo.value = {x: parseInt(x), y: parseInt(y)}
+}
+
+function wordDirection(x_start, y_start, x_end, y_end) {
+    if (x_start === x_end && y_start > y_end) {
+        // up
+        return 0
+    } else if (x_start < x_end && y_start > y_end) {
+        // up-right
+        return 1
+    } else if (x_start < x_end && y_start === y_end) {
+        // right
+        return 2
+    } else if (x_start < x_end && y_start < y_end) {
+        // down-right
+        return 3
+    } else if (x_start === x_end && y_start < y_end) {
+        // down
+        return 4
+    } else if (x_start > x_end && y_start < y_end) {
+        // down-left
+        return 5
+    } else if (x_start > x_end && y_start === y_end) {
+        // left
+        return 6
+    } else if (x_start > x_end && y_start > y_end) {
+        // up-left
+        return 7
+    }
+}
+
+function wordLinesForTile(x, y) {
+    return foundWords.value.filter(w => (w.x_start === x) && (w.y_start === y))
+}
+
+function wordLineClasses(wordLine) {
+    const classes = [
+        'word-strike',
+        'word-strike-direction-' + wordLine.direction,
+        'word-strike-length-' + wordLine.length,
+    ]
+    // Odd directions are diagonal
+    if (wordLine.direction % 2 === 1) {
+        classes.push('word-strike-diagonal')
+    }
+    return classes
+}
+
+const debounce = (fn, delay) => {
+    let timeout
+
+    return (...args) => {
+        if (timeout) {
+            clearTimeout(timeout)
+        }
+
+        timeout = setTimeout(() => {
+            fn(...args)
+        }, delay)
     }
 }
 </script>
