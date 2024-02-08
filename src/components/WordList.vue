@@ -2,14 +2,14 @@
     <div class="words-list">
         <div
             v-for="word in words"
-            :key="word.value"
+            :key="word"
             class="words-list__item"
         >
             <span
                 class="words-list__value"
-                :class="{found: isFound(word.value)}"
+                :class="{found: isFound(word)}"
             >
-                {{ word.value }}
+                {{ word }}
             </span>
         </div>
     </div>
@@ -27,7 +27,7 @@ const props = defineProps({
     }
 })
 
-const isFound = word => props.foundWords.find(w => w.value === word)
+const isFound = word => props.foundWords.find(w => w === word)
 </script>
 <style lang="scss" scoped>
 .words-list {

@@ -26,17 +26,17 @@ const matrix = [
 ]
 
 const words = [
-    {value: 'BARS'},
-    {value: 'CANDY'},
-    {value: 'CARROT'},
-    {value: 'CHEESE'},
-    {value: 'CHIPS'},
-    {value: 'COOKIES'},
-    {value: 'CRACKERS'},
-    {value: 'FRUIT'},
-    {value: 'GRANOLA'},
-    {value: 'NUTS'},
-    {value: 'PRETZEL'},
-    {value: 'YOGURT'},
+    'BARS',
+    'CANDY',
+    'CARROT',
+    'CHEESE',
+    'CHIPS',
+    'COOKIES',
+    'CRACKERS',
+    'FRUIT',
+    'GRANOLA',
+    'NUTS',
+    'PRETZEL',
+    'YOGURT',
 ]
 </script>
