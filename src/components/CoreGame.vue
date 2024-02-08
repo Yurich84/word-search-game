@@ -164,14 +164,14 @@ function wordSelectStop(event) {
         return
     }
 
-    let word = props.words.find(item => item.value === selected.join(''));
+    let word = props.words.find(item => item === selected.join(''));
     let x_start = selectedCells.value[0]?.x
     let y_start = selectedCells.value[0]?.y
     let x_end = selectedCells.value[selectedCells.value.length - 1].x
     let y_end = selectedCells.value[selectedCells.value.length - 1].y
     if (!word) {
         const selected_word = selected.reverse().join('')
-        word = props.words.find(item => item.value === selected_word)
+        word = props.words.find(item => item === selected_word)
         x_end = selectedCells.value[0]?.x
         y_end = selectedCells.value[0]?.y
         x_start = selectedCells.value[selectedCells.value.length - 1].x
@@ -180,7 +180,7 @@ function wordSelectStop(event) {
     if (word) {
         let exists = false;
         foundWords.value.forEach(w => {
-            if (w.value === word.value) {
+            if (w.value === word) {
                 exists = true
             }
         })
@@ -191,11 +191,11 @@ function wordSelectStop(event) {
             })
 
             foundWords.value.push({
-                value: word.value,
+                value: word,
                 x_start: x_start,
                 y_start: y_start,
                 direction: wordDirection(x_start, y_start, x_end, y_end),
-                length: word.value.length
+                length: word.length
             })
         }
     }

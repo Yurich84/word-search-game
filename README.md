@@ -1,6 +1,12 @@
-# word-search-game
+# Word-search game
 
-This template should help get you started developing with Vue 3 in Vite.
+This project is made entirely in Vue 3 (composition API).
+
+### Main advantages:
+- **Lightweight**: minimal libraries, just vue3 and sass
+- **Responsive**: without using canvas
+
+Try it: https://yurich84.github.io/word-search-game/
 
 ## Recommended IDE Setup
 
